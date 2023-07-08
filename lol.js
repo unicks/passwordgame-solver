@@ -34,10 +34,27 @@ function getGoodMoon() {
     var goodPlace = usefulComponent.currPlace.title.toLowerCase()
     var goodMoon = getGoodMoon()
     //var chessSolution = usefulComponent.getChessSolutions()[usefulComponent.currChessPuzzle].sol
-    
+
     password = password + month + leapYear + romanNumerals + sponsor + captcha +
                element + wordleAnswer + goodMoon + goodPlace
-    
-    // Insert password
+
+    // I don't like this solution. Wish I could access B
     document.getElementsByClassName('ProseMirror')[0].firstChild.innerText = password
+    while (!usefulComponent.possibleChessMoves) {
+        await new Promise(resolve => setTimeout(resolve,200))
+    }
+    for (var chessSol of usefulComponent.possibleChessMoves) {
+        console.log(chessSol)
+        var numVal = chessSol.match(/\d+/)[0][0]
+        password = (9 - parseInt(numVal)).toString() + password.substring(1)
+        document.getElementsByClassName('ProseMirror')[0].firstChild.innerText = password + chessSol
+        await new Promise(resolve => setTimeout(resolve,50))
+        if (usefulComponent.ruleReached > 16)
+            break
+    }
+
+    password = password + chessSol + '🥚'
+    document.getElementsByClassName('ProseMirror')[0].firstChild.innerText = password
+
+    // To continue I think We have to access the global variables [For the periodic table]
 })()
