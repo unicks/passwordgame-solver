@@ -1129,6 +1129,8 @@ periodicTable = [{
     symbol: "Og"
 }]  
 
+const romanNumerals = ['I','V','X','L','C','D','M']
+
 usefulComponent = window.$nuxt.$children[2].$children[0].$children[0]
 
 async function waitMs() {
@@ -1170,16 +1172,41 @@ function getBaseDigits(password) {
     return baseDigits.map(String).join('')
 }
 
-// function getElements(password) {
+function getElements(password) {
+    periodicSum = 0
+    periodicTable.forEach((element) => {
+        password.replaceAll(element.symbol, () => {periodicSum += parseInt(element.num)})
+    })
+    
+    elements = ''
+    if (periodicSum > 200) {
+        return elements
+    }
 
-// }
+    while (periodicSum != 200) {
+        var hasReachedEnd = periodicTable.slice().reverse().every((element) => {
+            if (periodicSum + parseInt(element.num) <= 200 &&
+                !romanNumerals.some((numeral) => {return element.symbol.includes(numeral)})) {
+                elements += element.symbol
+                periodicSum += parseInt(element.num)
+                return false
+            }
+            return true
+        })
+        
+        if (hasReachedEnd)
+            break
+    }
+
+    return elements
+}
 
 (async() => {
     // Preparations
     forceGoodCaptcha()
     
     var baseDigits = getBaseDigits('')
-    var basePassword = 'A!'
+    var basePassword = '!'
     
     while (!usefulComponent.wordleAnswer) {
         await waitMs(200)
@@ -1190,7 +1217,7 @@ function getBaseDigits(password) {
     var sponsor = 'shell'
     var captcha = 'cnwyc'
     var element = 'Ag'
-    var wordleAnswer = usefulComponent.wordleAnswer
+    var wordleAnswer = usefulComponent.wordleAnswer.toLowerCase()
     var goodPlace = usefulComponent.currPlace.title.toLowerCase()
     var goodMoon = getGoodMoon()
     
@@ -1203,7 +1230,7 @@ function getBaseDigits(password) {
     var chessSolution = chessGames[usefulComponent.currChessPuzzle].sol
     baseDigits = getBaseDigits(chessSolution) // This is the only value that may preset new digits
     password = basePassword + baseDigits + month + leapYear + romanNumerals + sponsor + captcha +
-               element + wordleAnswer + goodMoon + goodPlace + chessSolution + '🥚'
+               wordleAnswer + goodMoon + goodPlace + chessSolution + '🥚'
+    password = getElements(password) + password
     document.getElementsByClassName('ProseMirror')[0].firstChild.innerText = password
-
 })()
