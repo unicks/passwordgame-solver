@@ -1137,6 +1137,12 @@ async function waitMs() {
     await new Promise(resolve => setTimeout(resolve,200))
 }
 
+function updatePassword(newPassword) {
+    newPassword = getElements(newPassword) + newPassword
+    usefulComponent.editor.commands.setContent(newPassword)
+    makeVolwelsBold(newPassword)
+}
+
 function forceGoodCaptcha() {
     var currCaptcha = usefulComponent.currCaptcha
     
@@ -1174,8 +1180,13 @@ function getBaseDigits(password) {
 
 function getElements(password) {
     periodicSum = 0
-    periodicTable.forEach((element) => {
-        password.replaceAll(element.symbol, () => {periodicSum += parseInt(element.num)})
+
+    // Reverse order to mimic neals logic
+    periodicTable.slice().reverse().forEach((element) => {
+        password = password.replaceAll(element.symbol, () => {
+            periodicSum += parseInt(element.num)
+            return ''
+        })
     })
     
     elements = ''
@@ -1201,6 +1212,14 @@ function getElements(password) {
     return elements
 }
 
+function makeVolwelsBold(password) {
+    usefulComponent.editor.chain().setTextSelection({from: 0, to: password.length}).unsetBold().run();
+    [...password.matchAll(/[aeiouy]/gi)].forEach((v) => {
+        usefulComponent.editor.chain().setTextSelection({from: v.index + 1, to: v.index + 2}).setBold().run()
+    })
+
+}
+
 (async() => {
     // Preparations
     forceGoodCaptcha()
@@ -1216,21 +1235,26 @@ function getElements(password) {
     var romanNumerals = 'XXXV'
     var sponsor = 'shell'
     var captcha = 'cnwyc'
-    var element = 'Ag'
     var wordleAnswer = usefulComponent.wordleAnswer.toLowerCase()
-    var goodPlace = usefulComponent.currPlace.title.toLowerCase()
+    var goodPlace = usefulComponent.currPlace.title.toLowerCase().replace(/\s+/g, '')
     var goodMoon = getGoodMoon()
     
     // Up to Lvl 15, needed to render the chess game
     password = basePassword + baseDigits + month + leapYear + romanNumerals + sponsor + captcha +
-    element + wordleAnswer + goodMoon + goodPlace 
-    document.getElementsByClassName('ProseMirror')[0].firstChild.innerText = password
+               wordleAnswer + goodMoon + goodPlace 
+    updatePassword(password)
     
     
     var chessSolution = chessGames[usefulComponent.currChessPuzzle].sol
     baseDigits = getBaseDigits(chessSolution) // This is the only value that may preset new digits
     password = basePassword + baseDigits + month + leapYear + romanNumerals + sponsor + captcha +
                wordleAnswer + goodMoon + goodPlace + chessSolution + '🥚'
-    password = getElements(password) + password
-    document.getElementsByClassName('ProseMirror')[0].firstChild.innerText = password
+    updatePassword(password)
+
+    // Again to stop the fire
+    updatePassword(password)
+
+    password = '🏋️‍♂️🏋️‍♂️🏋️‍♂️iamloved' + password + '🐛🐛🐛🐛🐛🐛🐛🐛'
+
+    updatePassword(password)
 })()
