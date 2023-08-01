@@ -3152,7 +3152,11 @@ function sacrificeLetters(password) {
 function updatePassword(newPassword) {
     newPassword = getBaseDigits(newPassword) + getElements(newPassword) + newPassword
     usefulComponent.editor.commands.setContent(newPassword)
-    makeVolwelsBold(newPassword)
+    var boldAmount = makeVowelsBold(newPassword)
+    makeTwiceAsItalic(boldAmount)
+    makeThirdWingdings(newPassword.length)
+    makeRomeGreatAgain(newPassword)
+    makeFontSizeSquare(newPassword)
 }
 
 function forceGoodCaptcha() {
@@ -3224,12 +3228,33 @@ function getElements(password) {
     return elements
 }
 
-function makeVolwelsBold(password) {
-    usefulComponent.editor.chain().setTextSelection({from: 0, to: password.length}).unsetBold().run();
+function makeVowelsBold(password) {
+    var boldAmount = 0;
     [...password.matchAll(/[aeiouy]/gi)].forEach((v) => {
+        boldAmount++
         usefulComponent.editor.chain().setTextSelection({from: v.index + 1, to: v.index + 2}).setBold().run()
     })
+    return boldAmount
+}
 
+function makeTwiceAsItalic(boldAmount) {
+    usefulComponent.editor.chain().setTextSelection({from: 1, to: (boldAmount * 2) + 4}).setItalic().run()
+}
+
+function makeThirdWingdings(passwordLength) {
+    usefulComponent.editor.chain().setTextSelection({from: 1, to: Math.floor(passwordLength / 3)}).setFontFamily('Wingdings').run()
+}
+
+function makeRomeGreatAgain(password) {
+    [...password.matchAll(/[IVXLCDM]/g)].forEach((v) => {
+        usefulComponent.editor.chain().setTextSelection({from: v.index + 1, to: v.index + 2}).setFontFamily('Times New Roman').run()
+    })
+}
+
+function makeFontSizeSquare(password) {
+    [...password.matchAll(/[0-9]/g)].forEach((v) => {
+        usefulComponent.editor.chain().setTextSelection({from: v.index + 1, to: v.index + 2}).setMark('textStyle', {fontSize: Math.pow(parseInt(v), 2).toString() + 'px'}).run()
+    })
 }
 
 (async() => {
@@ -3266,7 +3291,7 @@ function makeVolwelsBold(password) {
 
     youtubeLength = new Date(usefulComponent.randomYoutubeDuration * 1000).toISOString().slice(14, 19)
     password = '🏋️‍♂️🏋️‍♂️🏋️‍♂️' + 'iamloved' + 'youtube.com/watch?v=' + youtubeInfo[youtubeLength] +
-               password + '🐛🐛🐛🐛🐛🐛🐛🐛'
+               usefulComponent.randomColor + password + '🐛🐛🐛🐛🐛🐛🐛🐛'
 
     updatePassword(password)
 
