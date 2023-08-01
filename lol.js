@@ -3134,6 +3134,21 @@ async function waitMs() {
     await new Promise(resolve => setTimeout(resolve,200))
 }
 
+function sacrificeLetters(password) {
+    var sacrificedAmount = 0
+    var sacrificeComponent = usefulComponent.$children[2].$children[0].$children[24].$children[0]
+    var uPassword = password.toUpperCase()
+    for(i = 25; i >= 0 && sacrificedAmount < 2; i--) {
+        c = String.fromCharCode(i + 65)
+        if(!uPassword.includes(c)) {
+            sacrificedAmount++
+            sacrificeComponent.toggle(c)
+        }
+    }
+    waitMs(100)
+    sacrificeComponent.makeSacrifice()
+}
+
 function updatePassword(newPassword) {
     newPassword = getBaseDigits(newPassword) + getElements(newPassword) + newPassword
     usefulComponent.editor.commands.setContent(newPassword)
@@ -3254,4 +3269,10 @@ function makeVolwelsBold(password) {
                password + '🐛🐛🐛🐛🐛🐛🐛🐛'
 
     updatePassword(password)
+
+    while (usefulComponent.$children[2].$children[0].$children.length < 25) {
+        await waitMs(200)
+    }
+
+    sacrificeLetters(password + getElements(password))
 })()
