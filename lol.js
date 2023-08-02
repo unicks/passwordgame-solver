@@ -3130,8 +3130,8 @@ const romanNumerals = ['I','V','X','L','C','D','M']
 
 usefulComponent = window.$nuxt.$children[2].$children[0].$children[0]
 
-async function waitMs() {
-    await new Promise(resolve => setTimeout(resolve,200))
+async function waitMs(ms) {
+    await new Promise(resolve => setTimeout(resolve,ms))
 }
 
 function sacrificeLetters(password) {
@@ -3149,14 +3149,29 @@ function sacrificeLetters(password) {
     sacrificeComponent.makeSacrifice()
 }
 
-function updatePassword(newPassword) {
+function updatePassword(newPassword, addWarms, formatPassword, reType = false) {
     newPassword = getBaseDigits(newPassword) + getElements(newPassword) + newPassword
-    usefulComponent.editor.commands.setContent(newPassword)
-    var boldAmount = makeVowelsBold(newPassword)
-    makeTwiceAsItalic(boldAmount)
-    makeThirdWingdings(newPassword.length)
-    makeRomeGreatAgain(newPassword)
-    makeFontSizeSquare(newPassword)
+    if (addWarms) {
+        // Taken from 'split-graphemes'
+        const passwordLengthRegex = /(([\u{1F300}-\u{1F5FF}])(\u{200D}([\u{2600}-\u{26FF}])|[\u{FE0E}\u{FE0F}])*|.)/gu
+        const passwordLength = newPassword.match(passwordLengthRegex).length
+        // Remove trailing worms to know how many are required
+        newPassword = newPassword.slice(0, newPassword.indexOf('🥚') + 2)
+        var worms = '🐛'.repeat(101 - passwordLength)
+        newPassword = newPassword + worms
+    }
+    var editor = reType ? usefulComponent.editor : usefulComponent.$children[1].editor
+    editor.commands.setContent(newPassword)
+
+    // Format password to pass formatting rules
+    if (formatPassword) {
+        var boldAmount = makeVowelsBold(newPassword, editor)
+        makeTwiceAsItalic(boldAmount, editor)
+        makeThirdWingdings(newPassword.length, editor)
+        makeRomeGreatAgain(newPassword, editor)
+        makeFontSizeSquare(newPassword, editor)
+        makeCharactersDifferentFonts(newPassword, editor)
+    }
 }
 
 function forceGoodCaptcha() {
@@ -3228,33 +3243,47 @@ function getElements(password) {
     return elements
 }
 
-function makeVowelsBold(password) {
+function makeVowelsBold(password, editor) {
     var boldAmount = 0;
     [...password.matchAll(/[aeiouy]/gi)].forEach((v) => {
         boldAmount++
-        usefulComponent.editor.chain().setTextSelection({from: v.index + 1, to: v.index + 2}).setBold().run()
+        editor.chain().setTextSelection({from: v.index + 1, to: v.index + 2}).setBold().run()
     })
     return boldAmount
 }
 
-function makeTwiceAsItalic(boldAmount) {
-    usefulComponent.editor.chain().setTextSelection({from: 1, to: (boldAmount * 2) + 4}).setItalic().run()
+function makeTwiceAsItalic(boldAmount, editor) {
+    editor.chain().setTextSelection({from: 1, to: (boldAmount * 2) + 4}).setItalic().run()
 }
 
-function makeThirdWingdings(passwordLength) {
-    usefulComponent.editor.chain().setTextSelection({from: 1, to: Math.floor(passwordLength / 3)}).setFontFamily('Wingdings').run()
+function makeThirdWingdings(passwordLength, editor) {
+    editor.chain().setTextSelection({from: 1, to: Math.floor(passwordLength / 3)}).setFontFamily('Wingdings').run()
 }
 
-function makeRomeGreatAgain(password) {
+function makeRomeGreatAgain(password, editor) {
     [...password.matchAll(/[IVXLCDM]/g)].forEach((v) => {
-        usefulComponent.editor.chain().setTextSelection({from: v.index + 1, to: v.index + 2}).setFontFamily('Times New Roman').run()
+        editor.chain().setTextSelection({from: v.index + 1, to: v.index + 2}).setFontFamily('Times New Roman').run()
     })
 }
 
-function makeFontSizeSquare(password) {
+function makeFontSizeSquare(password, editor) {
     [...password.matchAll(/[0-9]/g)].forEach((v) => {
-        usefulComponent.editor.chain().setTextSelection({from: v.index + 1, to: v.index + 2}).setMark('textStyle', {fontSize: Math.pow(parseInt(v), 2).toString() + 'px'}).run()
+        editor.chain().setTextSelection({from: v.index + 1, to: v.index + 2}).setMark('textStyle', {fontSize: Math.pow(parseInt(v), 2).toString() + 'px'}).run()
     })
+}
+
+function makeCharactersDifferentFonts(password, editor) {
+    const fontSizes = ['0px','1px','4px','9px','12px','16px','25px','28px','32px','36px','42px','49px','64px','81px']
+
+    for (c = 0; c < 26; c++) {
+        var fontSizeIndex = 0
+        for (i = 0; i < password.length; i++) {
+            if (password[i] == String.fromCharCode(c + 65) || password[i] == String.fromCharCode(c + 97)) {
+                editor.chain().setTextSelection({from: i + 1, to: i + 2}).setMark('textStyle', {fontSize: fontSizes[fontSizeIndex]}).run()
+                fontSizeIndex++
+            }
+        }
+    }
 }
 
 (async() => {
@@ -3266,7 +3295,7 @@ function makeFontSizeSquare(password) {
     while (!usefulComponent.wordleAnswer) {
         await waitMs(200)
     }
-    var month = 'July'
+    var month = 'may'
     var leapYear = '0'
     var romanNumerals = 'XXXV'
     var sponsor = 'shell'
@@ -3278,26 +3307,43 @@ function makeFontSizeSquare(password) {
     // Up to Lvl 15, needed to render the chess game
     password = basePassword + month + leapYear + romanNumerals + sponsor + captcha +
                wordleAnswer + goodMoon + goodPlace 
-    updatePassword(password)
+    updatePassword(password, false, false)
     
     
     var chessSolution = chessGames[usefulComponent.currChessPuzzle].sol
     password = month + leapYear + romanNumerals + sponsor + captcha +
                wordleAnswer + goodMoon + goodPlace + chessSolution + '🥚'
-    updatePassword(password)
+    updatePassword(password, false, true)
 
     // Again to stop the fire
-    updatePassword(password)
+    updatePassword(password, false, true)
 
+    // Using long youtube URL to make password closer to 101 characters
     youtubeLength = new Date(usefulComponent.randomYoutubeDuration * 1000).toISOString().slice(14, 19)
+    currTime = (new Date).toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: !0 }).split(' ') [0];
     password = '🏋️‍♂️🏋️‍♂️🏋️‍♂️' + 'iamloved' + 'youtube.com/watch?v=' + youtubeInfo[youtubeLength] +
-               usefulComponent.randomColor + password + '🐛🐛🐛🐛🐛🐛🐛🐛'
+               usefulComponent.randomColor + currTime + '101' + password
+    password[password.length - 2] = '🐔'
 
-    updatePassword(password)
+    updatePassword(password, true, true)
 
+    // Wait for sacrifice rule to render
     while (usefulComponent.$children[2].$children[0].$children.length < 25) {
-        await waitMs(200)
+        await waitMs(50)
+    }
+    sacrificeLetters(password + getElements(password))
+
+    // Resubmit password to correct the amount of worms
+    password[password.length - 2] = '🐔'
+    updatePassword(password, true, true)
+
+    while (usefulComponent.$children[2].$children[0].$children.length < 35) {
+        await waitMs(50)
     }
 
-    sacrificeLetters(password + getElements(password))
+    // Confirm this is my final password
+    document.getElementsByClassName('final-password')[0].firstChild.click()
+
+    // Retype password
+    updatePassword(password, true, true, true)
 })()
